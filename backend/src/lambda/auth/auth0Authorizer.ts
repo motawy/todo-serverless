@@ -3,18 +3,15 @@ import 'source-map-support/register'
 
 import { verify, decode } from 'jsonwebtoken'
 import { createLogger } from '../../utils/logger'
-import Axios from 'axios'
 import { Jwt } from '../../auth/Jwt'
 import { JwtPayload } from '../../auth/JwtPayload'
-
+import * as jwksClient from 'jwks-rsa';
 const logger = createLogger('auth')
 
 // URL to download certificate
 const jwksUrl = 'https://dev-mido.eu.auth0.com/.well-known/jwks.json'
 
-export const handler = async (
-  event: CustomAuthorizerEvent
-): Promise<CustomAuthorizerResult> => {
+export const handler = async (event: CustomAuthorizerEvent): Promise<CustomAuthorizerResult> => {
   logger.info('Authorizing a user', event.authorizationToken)
   try {
     const jwtToken = await verifyToken(event.authorizationToken)
@@ -52,19 +49,23 @@ export const handler = async (
   }
 }
 
+
 async function verifyToken(authHeader: string): Promise<JwtPayload> {
   const token = getToken(authHeader)
   const jwt = decode(token, { complete: true }) as Jwt
   // Check if jwt is valid
   if (!jwt) throw new Error('Invalid Token')
-  try {
-    const response = await Axios.get(jwksUrl);
-    return verify(token, response.data, { algorithms: ['RS256'] }) as JwtPayload
-  } catch (error) {
-    logger.error("Error in the verification of the token.")
-    console.error(error);
-    return undefined
-  }
+  const client = jwksClient({
+    jwksUri: jwksUrl,
+  });
+
+  const kid = jwt.header.kid
+  client.getSigningKey(kid, (err, key) => {
+    if (err) logger.error("Error in Signing key.")
+    const signingKey = key.getPublicKey()
+    verify(token, signingKey);
+  })
+  return jwt.payload
 }
 
 function getToken(authHeader: string): string {
