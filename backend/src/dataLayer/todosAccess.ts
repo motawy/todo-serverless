@@ -10,16 +10,16 @@ export class TodoAccess {
     constructor(
         private readonly docClient: DocumentClient = createDynamoDBClient(),
         private readonly todosTable = process.env.TODOS_TABLE,
-        // private readonly userIDIndex = process.env.INDEX_NAME
+        //private readonly userIDIndex = process.env.INDEX_NAME
     ) { }
 
     async getTodos(userID: string): Promise<TodoItem[]> {
         logger.info("Querying table.")
         const result = await this.docClient.scan({
             TableName: this.todosTable,
-            FilterExpression: 'userdId = :userdId',
+            FilterExpression: 'userId = :userId',
             ExpressionAttributeValues: {
-                ':userdId': userID
+                ':userId': userID
             }
         }).promise()
         const items = result.Items
@@ -27,7 +27,6 @@ export class TodoAccess {
     }
 
     async createTodo(todo: TodoItem): Promise<TodoItem> {
-        logger.info("TODO: "+todo)
         await this.docClient.put({
             TableName: this.todosTable,
             Item: todo

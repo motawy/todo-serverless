@@ -17,17 +17,14 @@ export async function getTodos(idToken: string): Promise<Todo[]> {
   return response.data.items
 }
 
-export async function createTodo(
-  idToken: string,
-  newTodo: CreateTodoRequest
-): Promise<Todo> {
+export async function createTodo(idToken: string,newTodo: CreateTodoRequest): Promise<Todo> {
   const response = await Axios.post(`${apiEndpoint}/todos`,  JSON.stringify(newTodo), {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${idToken}`
     }
-  })
-  return response.data.item
+  })  
+  return response.data.todo
 }
 
 export async function patchTodo(

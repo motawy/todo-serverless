@@ -45,6 +45,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
   }
 
   onTodoCreate = async (event: React.ChangeEvent<HTMLButtonElement>) => {
+    event.preventDefault()
     try {
       const dueDate = this.calculateDueDate()
       console.log('GET ID TOKEN: ', this.props.auth.getIdToken())

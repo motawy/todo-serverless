@@ -11,11 +11,10 @@ const logger = createLogger('create-todo')
 
 export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const newTodo: CreateTodoRequest = JSON.parse(event.body)
-  logger.info("NEW TODO: " + newTodo)
   const userID = getUserId(event)
-  if (userID === null || userID === undefined) logger.error("Error with the User ID")
-  const todo = createTodo(newTodo, userID)
-  if (todo === null || todo === undefined) logger.error("Error with the todo")
+  if (!userID) logger.error("Error with the User ID")
+  const todo = await createTodo(newTodo, userID)
+  if (!todo) logger.error("Error with the todo")
   return {
     statusCode: 201,
     body: JSON.stringify({

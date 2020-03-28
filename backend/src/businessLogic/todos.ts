@@ -6,18 +6,18 @@ import { CreateTodoRequest } from '../requests/CreateTodoRequest';
 const todoAccess = new TodoAccess();
 
 export async function getTodos(userId: string): Promise<TodoItem[]> {
-    return todoAccess.getTodos(userId);
+    return await todoAccess.getTodos(userId);
 }
 
-export async function createTodo(req: CreateTodoRequest, userID: string, ): Promise<TodoItem> {
+export async function createTodo(todoReq: CreateTodoRequest, userID: string, ): Promise<TodoItem> {
     const todo = {
         userId: userID,
         todoId: uuid.v4(),
         createdAt: new Date().toISOString(),
-        name: req.name,
-        dueDate: req.dueDate,
+        name: todoReq.name,
+        dueDate: todoReq.dueDate,
         done: false
     }
-    return todoAccess.createTodo(todo);
+    return await todoAccess.createTodo(todo);
 }
 
