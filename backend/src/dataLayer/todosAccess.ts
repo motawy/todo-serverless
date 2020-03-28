@@ -10,7 +10,7 @@ export class TodoAccess {
     constructor(
         private readonly docClient: DocumentClient = createDynamoDBClient(),
         private readonly todosTable = process.env.TODOS_TABLE,
-        //private readonly userIDIndex = process.env.INDEX_NAME
+        private readonly userIDIndex = process.env.INDEX_NAME
     ) { }
 
     async getTodos(userID: string): Promise<TodoItem[]> {
@@ -32,6 +32,34 @@ export class TodoAccess {
             Item: todo
         }).promise()
         return todo
+    }
+
+    async getTodo(todoID: string, userID: string): Promise<TodoItem> {
+        const result = await this.docClient
+            .query({
+                TableName: this.todosTable,
+                IndexName: this.userIDIndex,
+                KeyConditionExpression: 'todoId = :todoId and userId = :userId',
+                ExpressionAttributeValues: {
+                    ':todoId': todoID,
+                    ':userId': userID,
+                },
+            })
+            .promise();
+        const item = result.Items[0];
+        return item as TodoItem;
+    }
+
+    async deleteTodo(todoId: string, createdAt: string): Promise<void> {
+        this.docClient
+            .delete({
+                TableName: this.todosTable,
+                Key: {
+                    todoId,
+                    createdAt
+                },
+            })
+            .promise();
     }
 }
 
