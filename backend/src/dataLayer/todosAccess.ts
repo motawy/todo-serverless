@@ -4,13 +4,13 @@ import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 // const XAWS = AWSXRay.captureAWS(AWS)
 import { TodoItem } from '../models/TodoItem'
 import { createLogger } from '../utils/logger'
+import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
 const logger = createLogger('todos-access')
 
 export class TodoAccess {
     constructor(
         private readonly docClient: DocumentClient = createDynamoDBClient(),
-        private readonly todosTable = process.env.TODOS_TABLE,
-        //private readonly userIDIndex = process.env.INDEX_NAME
+        private readonly todosTable = process.env.TODOS_TABLE
     ) { }
 
     async getTodos(userID: string): Promise<TodoItem[]> {
@@ -32,6 +32,52 @@ export class TodoAccess {
             Item: todo
         }).promise()
         return todo
+    }
+
+    async deleteTodo(todoId: string): Promise<void> {
+        this.docClient
+            .delete({
+                TableName: this.todosTable,
+                Key: {
+                    "todoId": todoId,
+                },
+            })
+            .promise();
+    }
+
+    async updateTodo(updatedTodo: UpdateTodoRequest, todoID: string): Promise<void> {
+        await this.docClient.update({
+            TableName: this.todosTable,
+            Key: {
+                "todoId": todoID,
+            },
+            UpdateExpression: 'set #n = :t, dueDate = :d, done = :n',
+            ExpressionAttributeValues: {
+                ':t': updatedTodo.name,
+                ':d': updatedTodo.dueDate,
+                ':n': updatedTodo.done
+            },
+            ExpressionAttributeNames: {
+                "#n": "name"
+            },
+            ReturnValues: 'UPDATED_NEW',
+        }).promise()
+    }
+
+    async setAttachmentUrl(todoId: string, attachmentUrl: string): Promise<void> {
+        this.docClient
+            .update({
+                TableName: this.todosTable,
+                Key: {
+                    "todoId": todoId,
+                },
+                UpdateExpression: 'set attachmentUrl = :attachmentUrl',
+                ExpressionAttributeValues: {
+                    ':attachmentUrl': attachmentUrl,
+                },
+                ReturnValues: 'UPDATED_NEW',
+            })
+            .promise();
     }
 }
 
