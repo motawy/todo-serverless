@@ -10,8 +10,7 @@ const logger = createLogger('todos-access')
 export class TodoAccess {
     constructor(
         private readonly docClient: DocumentClient = createDynamoDBClient(),
-        private readonly todosTable = process.env.TODOS_TABLE,
-        //private readonly userIDIndex = process.env.INDEX_NAME
+        private readonly todosTable = process.env.TODOS_TABLE
     ) { }
 
     async getTodos(userID: string): Promise<TodoItem[]> {
@@ -63,6 +62,22 @@ export class TodoAccess {
             },
             ReturnValues: 'UPDATED_NEW',
         }).promise()
+    }
+
+    async setAttachmentUrl(todoId: string, attachmentUrl: string): Promise<void> {
+        this.docClient
+            .update({
+                TableName: this.todosTable,
+                Key: {
+                    "todoId": todoId,
+                },
+                UpdateExpression: 'set attachmentUrl = :attachmentUrl',
+                ExpressionAttributeValues: {
+                    ':attachmentUrl': attachmentUrl,
+                },
+                ReturnValues: 'UPDATED_NEW',
+            })
+            .promise();
     }
 }
 
