@@ -32,6 +32,9 @@ custom:
       - name: CreateToDoRequest
         contentType: application/json
         schema: ${file(models/create-todo-request.json)}
+      - name: UpdateToDoRequest
+        contentType: application/json
+        schema: ${file(models/update-todo-request.json)}
 
 functions:
   Auth:
@@ -63,18 +66,36 @@ functions:
             description: Create a new todo
             requestModels:
               "application/json": CreateToDoRequest
+    iamRoleStatementsName: ${self:service.name}-create-todo-role-${self:provider.stage}
     iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-  # TODO: Configure this function
-  # UpdateTodo:
-  #   handler: src/lambda/http/updateTodo.handler
-  #   events:
-  #     - http:
-  #         method: patch
-  #         path: todos/{todoId}
+  UpdateTodo:
+    handler: src/lambda/http/updateTodo.handler
+    events:
+      - http:
+          method: patch
+          path: todos/{todoId}
+          cors: true
+          authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Update a todo
+            description: Update a todo
+            requestModels:
+              "application/json": UpdateToDoRequest
+    iamRoleStatementsName: ${self:service.name}-update-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
     events:
@@ -83,6 +104,7 @@ functions:
           path: todos/{todoId}
           cors: true
           authorizer: Auth
+    iamRoleStatementsName: ${self:service.name}-delete-todo-role-${self:provider.stage}
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -126,23 +148,17 @@ resources:
         AttributeDefinitions:
           - AttributeName: todoId
             AttributeType: S
-          - AttributeName: createdAt
-            AttributeType: S
           - AttributeName: userId
             AttributeType: S
         KeySchema:
           - AttributeName: todoId
             KeyType: HASH
-          - AttributeName: createdAt
-            KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}
-        LocalSecondaryIndexes:
+        GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.INDEX_NAME}
             KeySchema:
-              - AttributeName: todoId
-                KeyType: HASH
-              - AttributeName: userId
-                KeyType: RANGE
+            - AttributeName: userId
+              KeyType: HASH
             Projection:
-              ProjectionType: ALL # What attributes will be copied to an index
+              ProjectionType: ALL
