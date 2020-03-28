@@ -6,13 +6,19 @@ plugins:
   - serverless-iam-roles-per-function
   - serverless-reqvalidator-plugin
   - serverless-aws-documentation
+  - serverless-plugin-tracing
 
 provider:
   name: aws
   runtime: nodejs12.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'eu-central-1'}
-
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - xray:PutTelemetryRecords
+        - xray:PutTraceSegments
+      Resource: "*"
   environment:
     TODOS_TABLE: Todo-${self:provider.stage}
     INDEX_NAME: userIDIndex
@@ -39,8 +45,12 @@ custom:
 
 functions:
   Auth:
+    tracing: true
+    iamRoleStatementsInherit: true
     handler: src/lambda/auth/auth0Authorizer.handler
   GetTodos:
+    tracing: true
+    iamRoleStatementsInherit: true
     handler: src/lambda/http/getTodos.handler
     events:
       - http:
@@ -54,6 +64,8 @@ functions:
           - dynamodb:Scan
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
   CreateTodo:
+    tracing: true
+    iamRoleStatementsInherit: true
     handler: src/lambda/http/createTodo.handler
     events:
       - http:
@@ -74,6 +86,8 @@ functions:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
   UpdateTodo:
+    tracing: true
+    iamRoleStatementsInherit: true
     handler: src/lambda/http/updateTodo.handler
     events:
       - http:
@@ -98,6 +112,8 @@ functions:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
   DeleteTodo:
+    tracing: true
+    iamRoleStatementsInherit: true
     handler: src/lambda/http/deleteTodo.handler
     events:
       - http:
@@ -116,6 +132,8 @@ functions:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
   GenerateUploadUrl:
+    tracing: true
+    iamRoleStatementsInherit: true
     handler: src/lambda/http/generateUploadUrl.handler
     events:
       - http:
