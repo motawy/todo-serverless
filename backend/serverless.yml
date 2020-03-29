@@ -13,18 +13,17 @@ provider:
   runtime: nodejs12.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'eu-central-1'}
-  iamRoleStatements:
-    - Effect: "Allow"
-      Action:
-        - xray:PutTelemetryRecords
-        - xray:PutTraceSegments
-      Resource: "*"
   environment:
     TODOS_TABLE: Todo-${self:provider.stage}
     INDEX_NAME: userIDIndex
     S3_BUCKET: ${self:service.name}-todo-s3-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - xray:PutTelemetryRecords
+        - xray:PutTraceSegments
+      Resource: "*"
 custom:
   webpack:
     webpackConfig: ./webpack.config.js
@@ -58,6 +57,7 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
+    iamRoleStatementsName: ${self:service.name}-get-todos-role-${self:provider.stage}
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -125,12 +125,12 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:DeleteItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-      - Effect: Allow
-        Action:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
   GenerateUploadUrl:
     tracing: true
     iamRoleStatementsInherit: true
@@ -143,6 +143,10 @@ functions:
           authorizer: Auth
     iamRoleStatementsName: ${self:service.name}-generate-url-role-${self:provider.stage}
     iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
       - Effect: Allow
         Action:
           - dynamodb:UpdateItem
@@ -179,18 +183,24 @@ resources:
         AttributeDefinitions:
           - AttributeName: todoId
             AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
           - AttributeName: userId
             AttributeType: S
         KeySchema:
           - AttributeName: todoId
             KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.INDEX_NAME}
             KeySchema:
-              - AttributeName: userId
+              - AttributeName: todoId
                 KeyType: HASH
+              - AttributeName: userId
+                KeyType: RANGE
             Projection:
               ProjectionType: ALL
     AttachmentBucket:
