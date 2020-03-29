@@ -31,21 +31,21 @@ export async function createTodo(todoReq: CreateTodoRequest, userID: string, ): 
     return await todoAccess.createTodo(todo);
 }
 
-export async function deleteTodo(todoID: string): Promise<void> {
-    return await todoAccess.deleteTodo(todoID)
+export async function deleteTodo(todoID: string, createdAt: string): Promise<void> {
+    return await todoAccess.deleteTodo(todoID, createdAt)
 }
 
-export async function updateTodo(todoID: string, updateTodoRequest: UpdateTodoRequest): Promise<void> {
-    return await todoAccess.updateTodo(updateTodoRequest, todoID)
+export async function updateTodo(todoID: string, updateTodoRequest: UpdateTodoRequest, createdAt:string): Promise<void> {
+    return await todoAccess.updateTodo(updateTodoRequest, todoID, createdAt)
 }
 
-export async function setAttachmentUrl(todoId: string, imageId: string): Promise<void> {
+export async function setAttachmentUrl(todoId: string, imageId: string, createdAt: string): Promise<void> {
     const imageUrl = `https://${bucketName}.s3.amazonaws.com/${imageId}`
-    return await todoAccess.setAttachmentUrl(todoId, imageUrl)
+    return await todoAccess.setAttachmentUrl(todoId, imageUrl, createdAt)
 }
 
-export function getUploadUrl(imageId: string): string {
-    const attachmentUrl = s3.getSignedUrl('putObject', {
+export async function getUploadUrl(imageId: string): Promise<string> {
+    const attachmentUrl = await s3.getSignedUrl('putObject', {
         Bucket: bucketName,
         Key: imageId,
         Expires: parseInt(urlExpiration)
